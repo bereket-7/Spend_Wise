@@ -1,117 +1,117 @@
-import mysql
-from database_connection import create_connection, close_connection
-from user import User
+import json
+from utils import api_service
+from response import json_response
+from user import user
+import database_query
 
-def create_user(user):
-    connection = create_connection()
-    if connection is None:
-        return False
-    try:
-        cursor = connection.cursor()
+class UserController(api_service):
+    def handle_get(self):
+        if self.path.startswith('/users/'):
+            user_id = int(self.path.split('/')[-1])
+            user = database_query.get_user_by_id(user_id)
 
-      # Insert a new user into the user table
-        query = "INSERT INTO user (username, password, email, phone_number, first_name, last_name,role) VALUES (%s, %s, %s, %s, %s, %s)"
-        values = (user.username, user.password, user.email, user.phone_number, user.first_name, user.last_name, user.role)
-        cursor.execute(query, values)
-        connection.commit()
+            if user is not None:
+                user_data = {
+                    'user_id': user.user_id,
+                    'username': user.username,
+                    'email': user.email,
+                    'phone_number': user.phone_number,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'role': user.role
+                }
+                return json_response(user_data)
+            else:
+                return json_response({'message': 'User not found'}, status_code=404)
+        elif self.path == '/users':
+            users = database_query.get_all_users()
 
-        return True
-    except mysql.connector.Error as err:
-        print(f"Error creating user: {err}")
-        return False
-    finally:
-        close_connection(connection)
+            if users is not None:
+                users_data = []
+                for user in users:
+                    user_data = {
+                        'user_id': user.user_id,
+                        'username': user.username,
+                        'email': user.email,
+                        'phone_number': user.phone_number,
+                        'first_name': user.first_name,
+                        'last_name': user.last_name,
+                        'role': user.role
+                    }
+                    users_data.append(user_data)
 
-def get_user_by_id(user_id):
-    connection = create_connection()
-    if connection is None:
-        return None
-    
-    try:
-        cursor = connection.cursor()
-
-        # Retrieve the user from the user table based on the ID
-        query = "SELECT user_id, username, password, email, phone_number, first_name, last_name,role FROM user WHERE user_id = %s"
-        values = (user_id,)
-        cursor.execute(query, values)
-        result = cursor.fetchone()
-
-        if result is not None:
-            # Create and return a User object
-            user = User(result[0], result[1], result[2], result[3], result[4], result[5], result[6])
-            return user
+                return json_response(users_data)
+            else:
+                return json_response({'message': 'No users found'}, status_code=404)
         else:
-            return None
-    except mysql.connector.Error as err:
-        print(f"Error retrieving user: {err}")
-        return None
-    finally:
-        close_connection(connection)
+            return json_response({'message': 'Not found'}, status_code=404)
 
-def update_user(user):
-    connection = create_connection()
-    if connection is None:
-        return False
-    
-    try:
-        cursor = connection.cursor()
+    def handle_post(self):
+        if self.path == '/users':
+            content_length = int(self.headers['Content-Length'])
+            body = self.rfile.read(content_length)
+            user_data = json.loads(body)
 
-        # Update the user in the user table
-        query = "UPDATE user SET username = %s, password = %s, email = %s, phone_number = %s, first_name = %s, last_name = %s WHERE user_id = %s"
-        values = (user.username, user.password, user.email, user.phone_number, user.first_name, user.last_name, user.user_id)
-        cursor.execute(query, values)
-        connection.commit()
+            user = user(
+                username=user_data['username'],
+                password=user_data['password'],
+                email=user_data['email'],
+                phone_number=user_data['phone_number'],
+                first_name=user_data['first_name'],
+                last_name=user_data['last_name'],
+                role=user_data['role']
+            )
+            result = database_query.create_user(user)
 
-        return True
-    except mysql.connector.Error as err:
-        print(f"Error updating user: {err}")
-        return False
-    finally:
-        close_connection(connection)
+            if result:
+                return json_response({'message': 'User created successfully'}, status_code=201)
+            else:
+                return json_response({'message': 'Failed to create user'}, status_code=500)
+        else:
+            return json_response({'message': 'Not found'}, status_code=404)
+        
 
-def delete_user(user_id):
-    connection = create_connection()
-    if connection is None:
-        return False
-    
-    try:
-        cursor = connection.cursor()
+    def handle_put(self):
+        if self.path.startswith('/users/'):
+            user_id = int(self.path.split('/')[-1])
+            user = database_query.get_user_by_id(user_id)
 
-        # Delete the user from the user table based on the ID
-        query = "DELETE FROM user WHERE user_id = %s"
-        values = (user_id,)
-        cursor.execute(query, values)
-        connection.commit()
+            if user is not None:
+                content_length = int(self.headers['Content-Length'])
+                body = self.rfile.read(content_length)
+                user_data = json.loads(body)
 
-        return True
-    except mysql.connector.Error as err:
-        print(f"Error deleting user: {err}")
-        return False
-    finally:
-        close_connection(connection)
-    
-def get_all_users():
-    connection = create_connection()
-    if connection is None:
-        return None
-    
-    try:
-        cursor = connection.cursor()
+                user.username = user_data.get('username', user.username)
+                user.password = user_data.get('password', user.password)
+                user.email = user_data.get('email', user.email)
+                user.phone_number = user_data.get('phone_number', user.phone_number)
+                user.first_name = user_data.get('first_name', user.first_name)
+                user.last_name = user_data.get('last_name', user.last_name)
 
-        # Retrieve all users from the user table
-        query = "SELECT user_id, username, password, email, phone_number, first_name, last_name,role FROM user"
-        cursor.execute(query)
-        results = cursor.fetchall()
+                result = database_query.update_user(user)
 
-        users = []
-        for result in results:
-            # Create and append a User object for each row
-            user = User(result[0], result[1], result[2], result[3], result[4], result[5], result[6])
-            users.append(user)
+                if result:
+                    return json_response({'message': 'User updated successfully'})
+                else:
+                    return json_response({'message': 'Failed to update user'}, status_code=500)
+            else:
+                return json_response({'message': 'User not found'}, status_code=404)
+        else:
+            return json_response({'message': 'Not found'}, status_code=404)
 
-        return users
-    except mysql.connector.Error as err:
-        print(f"Error retrieving users: {err}")
-        return None
-    finally:
-        close_connection(connection)
+    def handle_delete(self):
+        if self.path.startswith('/users/'):
+            user_id = int(self.path.split('/')[-1])
+            user = database_query.get_user_by_id(user_id)
+
+            if user is not None:
+                result = database_query.delete_user(user_id)
+
+                if result:
+                    return json_response({'message': 'User deleted successfully'})
+                else:
+                    return json_response({'message': 'Failed to delete user'}, status_code=500)
+            else:
+                return json_response({'message': 'User not found'}, status_code=404)
+        else:
+            return json_response({'message': 'Not found'}, status_code=404)
