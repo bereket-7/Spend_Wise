@@ -10,8 +10,8 @@ def create_user(user):
         cursor = connection.cursor()
 
       # Insert a new user into the user table
-        query = "INSERT INTO user (username, password, email, phone_number, first_name, last_name) VALUES (%s, %s, %s, %s, %s, %s)"
-        values = (user.username, user.password, user.email, user.phone_number, user.first_name, user.last_name)
+        query = "INSERT INTO user (username, password, email, phone_number, first_name, last_name,role) VALUES (%s, %s, %s, %s, %s, %s)"
+        values = (user.username, user.password, user.email, user.phone_number, user.first_name, user.last_name, user.role)
         cursor.execute(query, values)
         connection.commit()
 
@@ -31,7 +31,7 @@ def get_user_by_id(user_id):
         cursor = connection.cursor()
 
         # Retrieve the user from the user table based on the ID
-        query = "SELECT user_id, username, password, email, phone_number, first_name, last_name FROM user WHERE user_id = %s"
+        query = "SELECT user_id, username, password, email, phone_number, first_name, last_name,role FROM user WHERE user_id = %s"
         values = (user_id,)
         cursor.execute(query, values)
         result = cursor.fetchone()
@@ -99,7 +99,7 @@ def get_all_users():
         cursor = connection.cursor()
 
         # Retrieve all users from the user table
-        query = "SELECT user_id, username, password, email, phone_number, first_name, last_name FROM user"
+        query = "SELECT user_id, username, password, email, phone_number, first_name, last_name,role FROM user"
         cursor.execute(query)
         results = cursor.fetchall()
 
