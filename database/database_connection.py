@@ -21,3 +21,11 @@ def close_connection(connection):
     if connection.is_connected():
         connection.close()
         print("Database connection closed.")
+
+
+# Call the create_connection function to establish a connection
+connection = create_connection()
+
+# Call the close_connection function to close the connection
+if connection:
+    close_connection(connection)
