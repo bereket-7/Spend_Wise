@@ -3,7 +3,7 @@ import mysql.connector
 def create_connection():
     config = {
         'user': 'root',
-        'password': '',
+        'password': '8915code',
         'host': 'localhost',
         'database': 'spend_wise',
         'auth_plugin': 'mysql_native_password'
