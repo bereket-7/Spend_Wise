@@ -1,14 +1,13 @@
 import json
 from utils import api_service
 from response import json_response
-from user import user
-import database_query
+import user_query
 
 class UserController(api_service):
     def handle_get(self):
         if self.path.startswith('/users/'):
             user_id = int(self.path.split('/')[-1])
-            user = database_query.get_user_by_id(user_id)
+            user = user_query.get_user_by_id(user_id)
 
             if user is not None:
                 user_data = {
@@ -24,7 +23,7 @@ class UserController(api_service):
             else:
                 return json_response({'message': 'User not found'}, status_code=404)
         elif self.path == '/users':
-            users = database_query.get_all_users()
+            users = user_query.get_all_users()
 
             if users is not None:
                 users_data = []
@@ -61,7 +60,7 @@ class UserController(api_service):
                 last_name=user_data['last_name'],
                 role=user_data['role']
             )
-            result = database_query.create_user(user)
+            result = user_query.create_user(user)
 
             if result:
                 return json_response({'message': 'User created successfully'}, status_code=201)
@@ -74,7 +73,7 @@ class UserController(api_service):
     def handle_put(self):
         if self.path.startswith('/users/'):
             user_id = int(self.path.split('/')[-1])
-            user = database_query.get_user_by_id(user_id)
+            user = user_query.get_user_by_id(user_id)
 
             if user is not None:
                 content_length = int(self.headers['Content-Length'])
@@ -88,7 +87,7 @@ class UserController(api_service):
                 user.first_name = user_data.get('first_name', user.first_name)
                 user.last_name = user_data.get('last_name', user.last_name)
 
-                result = database_query.update_user(user)
+                result = user_query.update_user(user)
 
                 if result:
                     return json_response({'message': 'User updated successfully'})
@@ -102,10 +101,10 @@ class UserController(api_service):
     def handle_delete(self):
         if self.path.startswith('/users/'):
             user_id = int(self.path.split('/')[-1])
-            user = database_query.get_user_by_id(user_id)
+            user = user_query.get_user_by_id(user_id)
 
             if user is not None:
-                result = database_query.delete_user(user_id)
+                result = user_query.delete_user(user_id)
 
                 if result:
                     return json_response({'message': 'User deleted successfully'})
