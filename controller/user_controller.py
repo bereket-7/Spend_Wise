@@ -4,7 +4,7 @@ from utils.response import json_response
 
 import user_query
 
-class UserController(api_service):
+class UserController(api_service.APIService):
     def handle_get(self):
         if self.path.startswith('/users/'):
             user_id = int(self.path.split('/')[-1])
