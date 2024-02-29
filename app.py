@@ -1,7 +1,7 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse, parse_qs
-from controller.expense_controller import handle_expense_request
-from controller.user_controller import handle_user_request
+from user_controller import UserController
+from expense_controller import ExpenseController
 
 class SpendWiseRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -12,11 +12,11 @@ class SpendWiseRequestHandler(BaseHTTPRequestHandler):
         # Extract the path from the URL
         path = parsed_url.path
 
-        # Handle the request based on the path
+        #Handle the request based on the path
         if path == '/expenses':
-            handle_expense_request(self, query_params)
-        elif path == '/users':
-            handle_user_request(self, query_params)
+            ExpenseController(self, query_params)
+        if path == '/users':
+            UserController(self, query_params)
         else:
             self.send_response(404)
             self.send_header('Content-type', 'text/plain')

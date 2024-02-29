@@ -1,6 +1,7 @@
 import json
 from utils import api_service
-from response import json_response
+from utils.response import json_response
+
 import user_query
 
 class UserController(api_service):
