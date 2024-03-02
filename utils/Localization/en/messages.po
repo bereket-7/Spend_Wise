@@ -1,0 +1,10 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: en\n"
+
+msgid "Hello, welcome to SpendWise application!"
+msgstr "Hello, welcome to SpendWise application!"
+
+msgid "There are %(count)s items."
+msgstr "There are %(count)s items."
