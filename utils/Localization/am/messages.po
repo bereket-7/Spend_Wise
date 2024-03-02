@@ -7,4 +7,4 @@ msgid "Hello, welcome to SpendWise application!"
 msgstr "ሰላም, ወደ SpendWise እንኳን በደህና መጡ!"!"
 
 msgid "There are %(count)s items."
-msgstr "እንዴት %(count)s ንብረቶች እንችላለን."
+msgstr "እንኳን %(count)s."
