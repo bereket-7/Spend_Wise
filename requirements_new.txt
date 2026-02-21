@@ -1,0 +1,16 @@
+# Core dependencies
+mysql-connector-python==8.2.0
+PyJWT==2.8.0
+
+# Development and testing dependencies
+pytest==7.4.3
+pytest-asyncio==0.21.1
+
+# Optional: For enhanced security
+bcrypt==4.1.2
+
+# Optional: For data validation
+pydantic==2.5.3
+
+# Optional: For environment variable management
+python-dotenv==1.0.0
