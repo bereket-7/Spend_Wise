@@ -34,11 +34,12 @@ class AuthenticationManager:
             cursor = connection.cursor(dictionary=True)
             hashed_password = self.hash_password(password)
             
-            query = "SELECT user_id, username, password, email, phone_number, first_name, last_name, role FROM user WHERE username = %s"
-            cursor.execute(query, (username,))
+            # Secure: Verify credentials in database query
+            query = "SELECT user_id, username, email, phone_number, first_name, last_name, role FROM user WHERE username = %s AND password = %s"
+            cursor.execute(query, (username, hashed_password))
             result = cursor.fetchone()
             
-            if result and self.verify_password(password, result['password']):
+            if result:
                 return {
                     'user_id': result['user_id'],
                     'username': result['username'],
