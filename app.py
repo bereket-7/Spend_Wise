@@ -6,6 +6,9 @@ from controller.auth_controller import AuthController
 from controller.budget_controller import BudgetController
 from controller.income_controller import IncomeController
 from controller.notification_controller import NotificationController
+from controller.financial_health_controller import FinancialHealthController
+from controller.smart_categorization_controller import SmartCategorizationController
+from controller.subscription_controller import SubscriptionController
 
 class SpendWiseRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -39,6 +42,18 @@ class SpendWiseRequestHandler(BaseHTTPRequestHandler):
             self._send_response(response)
         elif path == '/notifications' or path.startswith('/notifications/'):
             controller = NotificationController(self, query_params)
+            response = controller.handle_get()
+            self._send_response(response)
+        elif path == '/financial-health':
+            controller = FinancialHealthController(self, query_params)
+            response = controller.handle_get()
+            self._send_response(response)
+        elif path == '/smart-categorize' or path == '/category-suggestions' or path == '/spending-patterns':
+            controller = SmartCategorizationController(self, query_params)
+            response = controller.handle_get()
+            self._send_response(response)
+        elif path == '/subscriptions' or path == '/subscription-alternatives' or path == '/subscription-changes':
+            controller = SubscriptionController(self, query_params)
             response = controller.handle_get()
             self._send_response(response)
         else:
@@ -78,6 +93,10 @@ class SpendWiseRequestHandler(BaseHTTPRequestHandler):
             self._send_response(response)
         elif path == '/notifications':
             controller = NotificationController(self, query_params)
+            response = controller.handle_post()
+            self._send_response(response)
+        elif path == '/learn-categorization':
+            controller = SmartCategorizationController(self, query_params)
             response = controller.handle_post()
             self._send_response(response)
         else:
@@ -212,6 +231,15 @@ def start_server():
     print('    PUT /notifications/{id}/read')
     print('    PUT /notifications/read-all')
     print('    DELETE /notifications/{id}')
+    print('  🆕 Smart Features:')
+    print('    GET /financial-health')
+    print('    GET /smart-categorize?description={text}&amount={num}&merchant={text}')
+    print('    GET /category-suggestions?text={partial_text}')
+    print('    GET /spending-patterns?days={num}')
+    print('    POST /learn-categorization')
+    print('    GET /subscriptions?days={num}')
+    print('    GET /subscription-alternatives?service={name}&max_cost={num}')
+    print('    GET /subscription-changes?days={num}')
     httpd.serve_forever()
 
 if __name__ == '__main__':
