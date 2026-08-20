@@ -4,7 +4,6 @@ from typing import Dict, List, Optional, Tuple
 from datetime import datetime, timedelta
 from collections import defaultdict
 from database.database_connection import get_connection, release_connection
-from database.expense_query import get_all_expenses
 
 logger = logging.getLogger(__name__)
 
