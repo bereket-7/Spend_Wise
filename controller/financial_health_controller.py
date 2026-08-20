@@ -1,30 +1,34 @@
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from utils.api_service import APIServiceHelper
 from utils.response import json_response
-from utils.authentication import auth_manager, TokenValidationMiddleware
 from utils.financial_health import FinancialHealthCalculator
+from utils.cache import cache_get_json, cache_set_json
 
 logger = logging.getLogger(__name__)
 
+
 class FinancialHealthController(APIServiceHelper):
     def handle_get(self) -> Dict[str, Any]:
-        """Handle GET requests for financial health"""
         try:
-            # Validate token
-            is_valid, auth_result = TokenValidationMiddleware.validate_request(self.handler)
-            if not is_valid:
-                return json_response(auth_result, 401)
+            user_data = self.get_auth_user()
+            if not user_data:
+                return json_response({'message': 'Unauthorized'}, 401)
 
-            user_data = auth_result
-
-            if self.path == '/financial-health':
-                calculator = FinancialHealthCalculator()
-                health_score = calculator.calculate_health_score(user_data['user_id'])
-                
-                return json_response(health_score)
-            else:
+            if self.path != '/financial-health':
                 return json_response({'message': 'Not found'}, 404)
+
+            user_id = user_data['user_id']
+            cache_key = f"fh:{user_id}"
+            cached = cache_get_json(cache_key)
+            if cached is not None:
+                return json_response(cached)
+
+            calculator = FinancialHealthCalculator()
+            health_score = calculator.calculate_health_score(user_id)
+            if 'error' not in health_score:
+                cache_set_json(cache_key, health_score, ttl_seconds=300)
+            return json_response(health_score)
         except Exception as e:
             logger.error(f"Error in financial health GET: {e}")
             return json_response({'message': 'Internal server error'}, 500)
