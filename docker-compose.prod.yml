@@ -1,0 +1,11 @@
+# Production overlay: expose only nginx (hide app port 8000)
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+  app:
+    ports: []
+
+  nginx:
+    ports:
+      - "80:80"
+      - "443:443"
