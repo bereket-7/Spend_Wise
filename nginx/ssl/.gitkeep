@@ -1,0 +1,2 @@
+# Placeholder for TLS certificates (fullchain.pem, privkey.pem)
+# Mount real certs here for production HTTPS.
