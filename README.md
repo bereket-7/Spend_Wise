@@ -1,275 +1,169 @@
-# Spend Wise - AI-Powered Financial Wellness Platform
+# Spend Wise — Expense Tracking & Financial Wellness API
 
-## Overview
+Python REST API for expense tracking, budgets, income, notifications, and smart insights (financial health score, categorization, subscription detection).
 
-Spend Wise is a comprehensive expense tracking and financial wellness platform that leverages AI to provide intelligent insights, automated categorization, and personalized financial recommendations.
+## Stack
 
-## Key Features
+- **Python** 3.11+
+- **MySQL** 8.0 (connection pool via `mysql-connector-python`)
+- **JWT** auth (`PyJWT`) with **bcrypt** password hashing (legacy SHA-256 hashes migrate on login)
+- **Redis** optional cache for smart endpoints
+- **stdlib `http.server`** (no Flask/FastAPI)
+- **Docker Compose** with MySQL, Redis, nginx
 
-### Financial Health Score
-- **Comprehensive Scoring**: 5 weighted components (savings rate, budget adherence, income stability, expense control, emergency fund)
-- **Health Levels**: Excellent (80+), Good (60+), Fair (40+), Poor (<40)
-- **Personalized Recommendations**: Actionable insights based on weak areas
-- **Visual Indicators**: Color-coded health status
+## Layout
 
-### Smart Categorization
-- **AI-Powered**: Automatic expense categorization from descriptions
-- **Multi-Signal Analysis**: Text matching, merchant recognition, amount patterns, user learning
-- **Learning System**: Improves accuracy from user corrections
-- **Confidence Scoring**: Indicates reliability of predictions
-- **Category Suggestions**: Real-time suggestions as users type
-
-### Subscription Detection
-- **Pattern Recognition**: Detects recurring charges across 90+ days
-- **Service Identification**: 20+ known subscription patterns (Netflix, Spotify, etc.)
-- **Cost Analysis**: Monthly/annual cost calculations
-- **Smart Insights**: Unused subscriptions, expensive services, optimization opportunities
-- **Alternative Suggestions**: Cheaper alternatives for detected services
-
-### Core Features
-- **JWT Authentication**: Secure token-based authentication
-- **Budget Management**: Create, track, and analyze budgets
-- **Income Tracking**: Monitor multiple income sources
-- **Expense Tracking**: Comprehensive expense management
-- **Notifications**: Real-time alerts and insights
-
-## Architecture
-
-```bash
-spend_wise/
-├── config/                     # Configuration management
-├── src/                        # Source code
-│   ├── api/                   # API layer
-│   ├── controllers/            # Request handlers
-│   ├── services/              # Business logic
-│   ├── repositories/          # Data access layer
-│   └── utils/                # Utilities
-├── tests/                     # Comprehensive testing
-├── docs/                      # Documentation
-├── migrations/                # Database migrations
-└── requirements/              # Dependencies
+```
+Spend_Wise/
+├── app.py                 # HTTP server, routing, /health, /metrics
+├── controller/            # Request handlers
+├── database/              # Connection pool + SQL query modules
+│   └── migration.sql      # Schema + seed data
+├── model/                 # Domain objects
+├── utils/                 # Auth, cache, categorizer, financial health, …
+├── config/                # Settings + logging
+├── nginx/                 # Reverse proxy config
+├── tests/                 # Unit + integration tests
+├── requirements/base.txt
+├── Dockerfile
+└── docker-compose.yml
 ```
 
-## Technology Stack
+## Quick start (local)
 
-- **Backend**: Python 3.11+
-- **Database**: MySQL 8.0
-- **Authentication**: JWT (JSON Web Tokens)
-- **API**: RESTful HTTP server
-- **Caching**: Redis
-- **Containerization**: Docker & Docker Compose
-- **Testing**: pytest with coverage
-- **Code Quality**: Black, flake8, mypy
-
-## Quick Start
-
-### Prerequisites
-- Python 3.11+
-- MySQL 8.0+
-- Redis (optional, for caching)
-
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/spendwise/spend-wise.git
-   cd spend-wise
-   ```
-
-2. **Set up environment**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
-   ```
-
-3. **Install dependencies**
-   ```bash
-   pip install -r requirements/base.txt
-   ```
-
-4. **Set up database**
-   ```bash
-   mysql -u root -p < migrations/001_initial_schema.sql
-   ```
-
-5. **Run the application**
-   ```bash
-   python app.py
-   ```
-
-### Docker Deployment
+1. Copy env and edit secrets:
 
 ```bash
-# Build and run with Docker Compose
-docker-compose up -d
-
-# Or build and run manually
-docker build -t spend-wise .
-docker run -p 8000:8000 spend-wise
+cp .env.example .env
 ```
 
-## API Documentation
+2. Create/activate a venv and install deps:
 
-### Authentication
-- `POST /auth/login` - User login
-- `POST /auth/register` - User registration
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements/base.txt
+```
 
-### Financial Health
-- `GET /financial-health` - Get comprehensive financial health score
+3. Start MySQL and apply schema:
 
-### Smart Features
-- `GET /smart-categorize?description={text}&amount={num}` - Auto-categorize expense
-- `GET /subscriptions?days={num}` - Detect subscriptions
-- `GET /spending-patterns?days={num}` - Analyze spending patterns
+```bash
+mysql -u root -p < database/migration.sql
+```
 
-### Core Features
-- `GET /expenses` - List expenses (with pagination)
-- `POST /expenses` - Create expense
-- `GET /budgets` - List budgets with spending info
-- `GET /incomes/summary` - Get income analytics
-- `GET /notifications/unread-count` - Get unread notifications
+4. (Optional) Start Redis for caching:
+
+```bash
+redis-server
+# or: docker run -p 6379:6379 redis:7-alpine
+```
+
+5. Run the API:
+
+```bash
+python app.py
+```
+
+Server listens on `SERVER_HOST`:`SERVER_PORT` (defaults: `localhost:8000`).
+
+### Dev admin user
+
+After migration, a seed admin exists:
+
+- Username: `admin`
+- Password: `admin123`
+
+Change this immediately outside local development.
+
+## Docker
+
+```bash
+docker-compose up --build
+```
+
+Services:
+
+| Service | Ports |
+|---------|-------|
+| app | 8000 |
+| mysql | 3306 |
+| redis | 6379 |
+| nginx | 80 (proxies to app) |
+
+Production-style (nginx only exposed):
+
+```bash
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+```
+
+App binds `0.0.0.0:8000` in the container. Health check: `GET /health`.
+
+## API overview
+
+### Public
+
+- `POST /auth/register` — register
+- `POST /auth/login` — returns JWT
+- `GET /health` — `{ status, database }`
+- `GET /metrics` — Prometheus text (if `prometheus-client` installed)
+
+### Authenticated (`Authorization: Bearer <token>`)
+
+| Area | Endpoints |
+|------|-----------|
+| Users | `GET/POST /users`, `GET/PUT/DELETE /users/{id}` |
+| Expenses | CRUD `/expenses` (scoped to current user) |
+| Budgets | CRUD `/budgets`, `GET /budgets/{id}/spending` |
+| Incomes | CRUD `/incomes`, `GET /incomes/summary` |
+| Notifications | CRUD + mark read |
+| Smart | `GET /financial-health`, `/smart-categorize`, `/spending-patterns`, `POST /learn-categorization` |
+| Subscriptions | `GET /subscriptions`, `/subscription-alternatives`, `/subscription-changes` |
+
+CORS preflight (`OPTIONS`) is supported.
+
+## Configuration
+
+See [`.env.example`](.env.example):
+
+| Variable | Purpose |
+|----------|---------|
+| `DB_*` | MySQL connection |
+| `JWT_SECRET_KEY` | Token signing |
+| `SERVER_HOST` / `SERVER_PORT` | Bind address |
+| `REDIS_URL` | Cache (default `redis://localhost:6379/0`) |
+| `CACHE_ENABLED` | `true`/`false` — if Redis is down, requests continue without cache |
+| `ENVIRONMENT` | `development` / `production` / `testing` |
+
+## Caching
+
+When Redis is available:
+
+| Key | TTL | Invalidated on |
+|-----|-----|----------------|
+| `fh:{user_id}` | 300s | expense/budget/income writes |
+| `sp:{user_id}:{days}` | 600s | same |
+| `sub:{user_id}:{days}` | 600s | same |
 
 ## Testing
 
 ```bash
-# Run all tests
-pytest
-
-# Run with coverage
-pytest --cov=src --cov-report=html
-
-# Run specific test file
-pytest tests/unit/test_financial_health_service.py
+source .venv/bin/activate
+PYTHONPATH=. pytest
 ```
 
-## Development
+Coverage gate is configured in `pyproject.toml` / `.coveragerc` (controllers + core utils, 80%+).
 
-### Code Quality
-```bash
-# Format code
-black src/ tests/
+## Security notes
 
-# Lint code
-flake8 src/ tests/
+- Passwords are stored with **bcrypt**; old SHA-256 hashes are re-hashed on successful login
+- JWT required for all non-public routes (enforced in `app.py`)
+- Resource queries are scoped by `user_id` from the token
+- Do not commit real secrets; use `.env` (gitignored)
 
-# Type checking
-mypy src/
-```
+## Project origin
 
-### Environment Setup
-```bash
-# Development environment
-export ENVIRONMENT=development
-export DEBUG=true
-
-# Production environment
-export ENVIRONMENT=production
-export DEBUG=false
-```
-
-## Configuration
-
-### Environment Variables
-
-```bash
-# Database
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=your_password
-DB_NAME=spend_wise
-
-# JWT
-JWT_SECRET_KEY=your-secret-key
-TOKEN_EXPIRY_HOURS=24
-
-# Server
-SERVER_HOST=localhost
-SERVER_PORT=8000
-
-# Logging
-LOG_LEVEL=INFO
-LOG_FILE_PATH=logs/app.log
-```
-
-## Deployment
-
-### Production Deployment
-
-1. **Environment Setup**
-   ```bash
-   export ENVIRONMENT=production
-   export DB_HOST=your-production-db
-   export JWT_SECRET_KEY=your-production-secret
-   ```
-
-2. **Using Docker Compose**
-   ```bash
-   docker-compose -f docker-compose.prod.yml up -d
-   ```
-
-3. **Using Gunicorn**
-   ```bash
-   gunicorn -w 4 -b 0.0.0.0:8000 app:app
-   ```
-
-### Monitoring
-
-- **Health Check**: `GET /health`
-- **Metrics**: Prometheus metrics at `/metrics`
-- **Logs**: Structured logging with correlation IDs
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Ensure all tests pass
-6. Submit a pull request
-
-### Development Guidelines
-
-- Follow PEP 8 style guidelines
-- Add type hints to all functions
-- Write comprehensive tests
-- Update documentation
-- Use meaningful commit messages
+Original design notes live in [`Design and step.txt`](Design%20and%20step.txt) (early expense-tracker brief). The current codebase is the fixed-in-place layout described above.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Support
-
-- **Documentation**: [docs.spendwise.com](https://docs.spendwise.com)
-- **Issues**: [GitHub Issues](https://github.com/spendwise/spend-wise/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/spendwise/spend-wise/discussions)
-
-## Roadmap
-
-### Phase 1: Quick Wins 
-- [x] Financial Health Score
-- [x] Smart Categorization
-- [x] Subscription Detection
-
-### Phase 2: Advanced Features
-- [ ] Receipt OCR Integration
-- [ ] Voice Expense Entry
-- [ ] Advanced Analytics Dashboard
-- [ ] API Rate Limiting
-
-### Phase 3: Ecosystem
-- [ ] Mobile App
-- [ ] Third-party Integrations
-- [ ] Machine Learning Models
-- [ ] Real-time Notifications
-
-## Performance
-
-- **API Response Time**: <200ms average
-- **Database Queries**: Optimized with indexing
-- **Memory Usage**: <512MB baseline
-- **Concurrent Users**: 1000+ supported
-
----
-**Built with for financial wellness**
+MIT (see project metadata in `pyproject.toml`).
