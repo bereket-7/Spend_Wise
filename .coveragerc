@@ -1,0 +1,20 @@
+[run]
+omit =
+    */tests/*
+    app.py
+    utils/api_service.py
+    utils/validation.py
+    config/logging.py
+    utils/subscription_manager.py
+    database/database_connection.py
+    database/budget_query.py
+    database/expense_query.py
+    database/income_query.py
+    database/notification_query.py
+    database/user_query.py
+    controller/user_controller.py
+
+[report]
+exclude_lines =
+    pragma: no cover
+    if __name__ == .__main__.:
