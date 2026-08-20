@@ -49,8 +49,19 @@ class APIServiceHelper:
     def __init__(self, handler: BaseHTTPRequestHandler, query_params: Dict[str, Any]):
         self.handler = handler
         self.query_params = query_params
-        self.path = handler.path
-        
+        self.path = urlparse(handler.path).path
+
+    def get_auth_user(self) -> Optional[Dict[str, Any]]:
+        """Return authenticated user set by app.py, or validate token."""
+        auth_user = getattr(self.handler, 'auth_user', None)
+        if auth_user:
+            return auth_user
+        from utils.authentication import TokenValidationMiddleware
+        is_valid, auth_result = TokenValidationMiddleware.validate_request(self.handler)
+        if is_valid:
+            return auth_result
+        return None
+
     def handle_get(self) -> Dict[str, Any]:
         """Handle GET requests"""
         from utils.response import json_response
