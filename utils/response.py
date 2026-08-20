@@ -56,14 +56,17 @@ def validate_amount(amount: Any) -> bool:
         return False
 
 def sanitize_string(input_str: str) -> str:
-    """Sanitize string input"""
+    """Normalize user string input (trim + length bound). SQL safety comes from parameterized queries."""
     if not input_str:
         return ""
-    # Remove potential SQL injection characters
-    dangerous_chars = ["'", '"', ';', '--', '/*', '*/', 'xp_', 'sp_']
-    for char in dangerous_chars:
-        input_str = input_str.replace(char, '')
-    return input_str.strip()
+    if not isinstance(input_str, str):
+        input_str = str(input_str)
+    cleaned = input_str.strip()
+    # Bound length to avoid abuse; do not silently strip SQL fragments
+    max_len = 2000
+    if len(cleaned) > max_len:
+        cleaned = cleaned[:max_len]
+    return cleaned
 
 def validate_required_fields(data: Dict[str, Any], required_fields: list) -> Tuple[bool, str]:
     """Validate that all required fields are present"""
