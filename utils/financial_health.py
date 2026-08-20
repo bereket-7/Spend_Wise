@@ -1,9 +1,8 @@
+import logging
 from typing import Dict, Any, Optional
 from datetime import datetime, timedelta
 from database.database_connection import get_connection, release_connection
-from database.expense_query import get_all_expenses
-from database.income_query import get_income_summary
-from database.budget_query import get_budgets_by_user
+from database.budget_query import get_budgets_by_user, get_budget_spending
 
 logger = logging.getLogger(__name__)
 
