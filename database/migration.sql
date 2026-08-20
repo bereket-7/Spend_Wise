@@ -81,6 +81,18 @@ CREATE TABLE IF NOT EXISTS notification (
     FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE
 );
 
+-- Categorization learning (user corrections for smart categorizer)
+CREATE TABLE IF NOT EXISTS categorization_learning (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    description TEXT,
+    merchant VARCHAR(100),
+    category VARCHAR(50) NOT NULL,
+    amount DECIMAL(10, 2),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE
+);
+
 -- Insert default categories
 INSERT IGNORE INTO category (name, description) VALUES 
 ('Food', 'Food and dining expenses'),
@@ -98,7 +110,8 @@ CREATE INDEX IF NOT EXISTS idx_expense_category ON expense(category);
 CREATE INDEX IF NOT EXISTS idx_budget_user_category ON budget(user_id, category);
 CREATE INDEX IF NOT EXISTS idx_income_user_date ON income(user_id, date);
 CREATE INDEX IF NOT EXISTS idx_notification_user_read ON notification(user_id, read);
+CREATE INDEX IF NOT EXISTS idx_learning_user ON categorization_learning(user_id);
 
--- Create a sample admin user (password: admin123)
+-- Sample admin user (password: admin123) — bcrypt hash; legacy SHA-256 also accepted until next login
 INSERT IGNORE INTO user (username, password, email, first_name, last_name, role) VALUES 
-('admin', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'admin@spendwise.com', 'Admin', 'User', 'admin');
+('admin', '$2b$12$8lQGOk/jTuI4HG5LmCiYTeNP3cS5RBQqS.kCICry/.jApoyzMvBd.', 'admin@spendwise.com', 'Admin', 'User', 'admin');
