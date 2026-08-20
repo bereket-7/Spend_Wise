@@ -1,7 +1,8 @@
 import re
 import logging
-from typing import Dict, List, Optional, Tuple
-from collections import defaultdict, Counter
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Tuple, Any
+from collections import defaultdict
 from database.database_connection import get_connection, release_connection
 
 logger = logging.getLogger(__name__)
@@ -228,13 +229,66 @@ class ExpenseCategorizer:
         return min(1.0, (frequency / 10) * accuracy)
     
     def _get_user_patterns(self, user_id: int) -> Dict:
-        """Get learned patterns for a specific user"""
+        """Get learned patterns for a specific user from DB and memory."""
         if not user_id:
             return {}
-        
-        # In a real implementation, this would query a user_learning table
-        # For now, return mock data
-        return self.user_preferences.get(user_id, {})
+
+        if user_id in self.user_preferences and self.user_preferences[user_id]:
+            return self.user_preferences[user_id]
+
+        connection = get_connection()
+        if not connection:
+            return {}
+
+        try:
+            cursor = connection.cursor(dictionary=True)
+            query = """
+            SELECT category, COUNT(*) as frequency
+            FROM categorization_learning
+            WHERE user_id = %s
+            GROUP BY category
+            """
+            cursor.execute(query, (user_id,))
+            results = cursor.fetchall()
+            patterns = defaultdict(lambda: {'frequency': 0, 'accuracy': 0.5})
+            for row in results:
+                patterns[row['category']] = {
+                    'frequency': row['frequency'],
+                    'accuracy': min(1.0, 0.5 + row['frequency'] * 0.05),
+                }
+            self.user_preferences[user_id] = patterns
+            return patterns
+        except Exception as e:
+            logger.warning(f"Could not load user patterns (table may be missing): {e}")
+            return {}
+        finally:
+            cursor.close()
+            release_connection(connection)
+
+    def _save_learning_to_database(
+        self, user_id: int, description: str, category: str, amount: float, merchant: str
+    ):
+        """Save learning data to categorization_learning table."""
+        connection = get_connection()
+        if not connection:
+            return
+        try:
+            cursor = connection.cursor()
+            query = """
+            INSERT INTO categorization_learning
+            (user_id, description, merchant, category, amount)
+            VALUES (%s, %s, %s, %s, %s)
+            """
+            cursor.execute(query, (user_id, description, merchant, category, amount))
+            connection.commit()
+            logger.info(f"Saved learning data for user {user_id}: {description} -> {category}")
+        except Exception as e:
+            logger.warning(f"Could not save learning data: {e}")
+            if connection:
+                connection.rollback()
+        finally:
+            cursor.close()
+            release_connection(connection)
     
     def _generate_reasoning(self, description: str, merchant: str, amount: float, category: str) -> str:
         """Generate human-readable reasoning for categorization"""
@@ -294,18 +348,13 @@ class ExpenseCategorizer:
             })
             
             logger.info(f"Learned from user correction: {original_category} -> {correct_category}")
-            
-            # In production, this would save to database
-            self._save_learning_to_database(user_id, original_description, correct_category, amount, merchant)
-            
+
+            self._save_learning_to_database(
+                user_id, original_description, correct_category, amount, merchant
+            )
+
         except Exception as e:
             logger.error(f"Error learning from correction: {e}")
-    
-    def _save_learning_to_database(self, user_id: int, description: str, category: str, amount: float, merchant: str):
-        """Save learning data to database (placeholder for implementation)"""
-        # In a real implementation, this would save to a user_learning table
-        # For now, just log the learning event
-        logger.info(f"Saving learning data for user {user_id}: {description} -> {category}")
     
     def get_category_suggestions(self, partial_text: str, user_id: int = None) -> List[Dict]:
         """Get category suggestions based on partial input"""
